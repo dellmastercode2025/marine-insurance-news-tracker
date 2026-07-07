@@ -1,0 +1,215 @@
+# Seed source registry.
+#
+# Source discipline: every entry is a legally accessible public source —
+# RSS/Atom feeds, official regulator publication pages, P&I club news pages,
+# press-release listings. The fetcher respects robots.txt for HTML sources,
+# sends an honest User-Agent, stores only headline + short excerpt + link,
+# and never authenticates or bypasses paywalls.
+#
+# fetch_method: rss  -> feed_url is parsed as RSS/Atom
+#               html -> url is a public listing page; links + titles only
+# authority_rank: 1 = official regulator/legal source
+#                 2 = P&I club / classification society / port authority
+#                 3 = specialist maritime press
+#                 4 = general/commodity press
+#                 5 = aggregator
+
+sources:
+  # ── 1. Sanctions and regulators ────────────────────────────────────────
+  - name: "OFAC Recent Actions"
+    slug: ofac-recent-actions
+    url: "https://ofac.treasury.gov/recent-actions"
+    feed_url: "https://ofac.treasury.gov/recent-actions/rss.xml"
+    fetch_method: rss
+    category: sanctions
+    authority_rank: 1
+    country: "United States"
+
+  - name: "US Treasury Press Releases"
+    slug: us-treasury-press
+    url: "https://home.treasury.gov/news/press-releases"
+    feed_url: "https://home.treasury.gov/rss/press-releases"
+    fetch_method: rss
+    category: sanctions
+    authority_rank: 1
+    country: "United States"
+
+  - name: "UK OFSI Publications (GOV.UK)"
+    slug: uk-ofsi
+    url: "https://www.gov.uk/government/organisations/office-of-financial-sanctions-implementation"
+    feed_url: "https://www.gov.uk/government/organisations/office-of-financial-sanctions-implementation.atom"
+    fetch_method: rss
+    category: sanctions
+    authority_rank: 1
+    country: "United Kingdom"
+
+  - name: "EU Council Press Releases"
+    slug: eu-council-press
+    url: "https://www.consilium.europa.eu/en/press/press-releases/"
+    feed_url: "https://www.consilium.europa.eu/en/rss/pressreleases.xml"
+    fetch_method: rss
+    category: sanctions
+    authority_rank: 1
+    country: "European Union"
+
+  - name: "IMO Press Briefings"
+    slug: imo-press
+    url: "https://www.imo.org/en/MediaCentre/PressBriefings/Pages/Default.aspx"
+    fetch_method: html
+    category: sanctions
+    authority_rank: 1
+    country: "International"
+
+  # ── 2. Marine insurance / P&I ──────────────────────────────────────────
+  - name: "Gard News & Insights"
+    slug: gard-news
+    url: "https://www.gard.no/articles/"
+    fetch_method: html
+    category: insurance
+    authority_rank: 2
+    country: "Norway"
+
+  - name: "Skuld News"
+    slug: skuld-news
+    url: "https://www.skuld.com/topics/"
+    fetch_method: html
+    category: insurance
+    authority_rank: 2
+    country: "Norway"
+
+  - name: "West P&I News"
+    slug: west-pi-news
+    url: "https://www.westpandi.com/news-and-resources/"
+    fetch_method: html
+    category: insurance
+    authority_rank: 2
+    country: "United Kingdom"
+
+  - name: "NorthStandard Insights"
+    slug: northstandard-news
+    url: "https://north-standard.com/insights-and-resources/"
+    fetch_method: html
+    category: insurance
+    authority_rank: 2
+    country: "United Kingdom"
+
+  - name: "UK P&I Club News"
+    slug: uk-pi-news
+    url: "https://www.ukpandi.com/news-and-resources/"
+    fetch_method: html
+    category: insurance
+    authority_rank: 2
+    country: "United Kingdom"
+
+  - name: "Britannia P&I News"
+    slug: britannia-pi-news
+    url: "https://britanniapandi.com/news-events/"
+    fetch_method: html
+    category: insurance
+    authority_rank: 2
+    country: "United Kingdom"
+
+  - name: "Steamship Mutual Publications"
+    slug: steamship-mutual
+    url: "https://www.steamshipmutual.com/publications"
+    fetch_method: html
+    category: insurance
+    authority_rank: 2
+    country: "United Kingdom"
+
+  - name: "International Group of P&I Clubs News"
+    slug: igpi-news
+    url: "https://www.igpandi.org/news-insights/"
+    fetch_method: html
+    category: insurance
+    authority_rank: 2
+    country: "International"
+
+  # ── 3. Tanker market / maritime press ──────────────────────────────────
+  - name: "gCaptain"
+    slug: gcaptain
+    url: "https://gcaptain.com"
+    feed_url: "https://gcaptain.com/feed/"
+    fetch_method: rss
+    category: market
+    authority_rank: 3
+    country: "United States"
+
+  - name: "Splash 247"
+    slug: splash247
+    url: "https://splash247.com"
+    feed_url: "https://splash247.com/feed/"
+    fetch_method: rss
+    category: market
+    authority_rank: 3
+    country: "Singapore"
+
+  - name: "Maritime Executive"
+    slug: maritime-executive
+    url: "https://maritime-executive.com"
+    feed_url: "https://maritime-executive.com/articles.rss"
+    fetch_method: rss
+    category: market
+    authority_rank: 3
+    country: "United States"
+
+  - name: "Ship & Bunker News"
+    slug: ship-and-bunker
+    url: "https://shipandbunker.com/news"
+    feed_url: "https://shipandbunker.com/news/feed"
+    fetch_method: rss
+    category: market
+    authority_rank: 3
+    country: "International"
+
+  - name: "Hellenic Shipping News – Tanker Market"
+    slug: hellenic-tankers
+    url: "https://www.hellenicshippingnews.com/category/shipping-news/tanker-market/"
+    fetch_method: html
+    category: market
+    authority_rank: 4
+    country: "Greece"
+
+  # ── 4. Shipbuilding ─────────────────────────────────────────────────────
+  - name: "Offshore Energy – Vessels"
+    slug: offshore-energy-vessels
+    url: "https://www.offshore-energy.biz/vessels/"
+    feed_url: "https://www.offshore-energy.biz/feed/"
+    fetch_method: rss
+    category: shipbuilding
+    authority_rank: 3
+    country: "Netherlands"
+
+  - name: "Marine Log"
+    slug: marine-log
+    url: "https://www.marinelog.com"
+    feed_url: "https://www.marinelog.com/feed/"
+    fetch_method: rss
+    category: shipbuilding
+    authority_rank: 3
+    country: "United States"
+
+  # ── 5. Ports and routes ────────────────────────────────────────────────
+  - name: "Suez Canal Authority News"
+    slug: suez-canal-authority
+    url: "https://www.suezcanal.gov.eg/English/MediaCenter/News/Pages/default.aspx"
+    fetch_method: html
+    category: ports
+    authority_rank: 2
+    country: "Egypt"
+
+  - name: "Panama Canal Authority Press"
+    slug: panama-canal
+    url: "https://pancanal.com/en/category/press-releases/"
+    fetch_method: html
+    category: ports
+    authority_rank: 2
+    country: "Panama"
+
+  - name: "US Maritime Administration (MARAD) Advisories"
+    slug: marad-advisories
+    url: "https://www.maritime.dot.gov/msci-advisories"
+    fetch_method: html
+    category: ports
+    authority_rank: 1
+    country: "United States"
