@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "maritime-tanker-intel-bot"
+version = "0.1.0"
+description = "Telegram bot delivering structured intelligence on oil tanker transportation, tanker markets, marine insurance, sanctions and shipbuilding"
+requires-python = ">=3.11"
+dependencies = [
+    "aiogram>=3.13",
+    "fastapi>=0.110",
+    "uvicorn>=0.29",
+    "sqlalchemy[asyncio]>=2.0",
+    "alembic>=1.13",
+    "aiosqlite>=0.20",
+    "asyncpg>=0.29",
+    "apscheduler>=3.10,<4",
+    "openai>=1.40",
+    "feedparser>=6.0",
+    "httpx>=0.27",
+    "pydantic>=2.7",
+    "pydantic-settings>=2.2",
+    "pyyaml>=6.0",
+    "python-dateutil>=2.9",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+]
+
+[tool.setuptools.packages.find]
+include = ["app*"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]

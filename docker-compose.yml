@@ -1,0 +1,36 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: intel
+      POSTGRES_PASSWORD: intel
+      POSTGRES_DB: tanker_intel
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U intel -d tanker_intel"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+asyncpg://intel:intel@db:5432/tanker_intel
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      ADMIN_TELEGRAM_USER_IDS: ${ADMIN_TELEGRAM_USER_IDS}
+      LLM_PROVIDER: ${LLM_PROVIDER:-openai}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
+      APP_ENV: ${APP_ENV:-development}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      APP_TIMEZONE: ${APP_TIMEZONE:-Asia/Aqtau}
+      ADMIN_API_TOKEN: ${ADMIN_API_TOKEN:-dev-only-token}
+    ports:
+      - "8000:8000"
+
+volumes:
+  pgdata:
