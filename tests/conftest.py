@@ -6,7 +6,12 @@ import pytest_asyncio
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from app.ai.client import LLMClient
-from app.ai.schemas import AnalysisResult, EntityBundle, InsuranceImplications
+from app.ai.schemas import (
+    AnalysisResult,
+    EntityBundle,
+    InsuranceImplications,
+    TranslationResult,
+)
 from app.db.models import Base, RawItem, Source
 from app.pipeline.normalize import normalize_title, sha256_hex, simhash64
 
@@ -72,20 +77,58 @@ def make_analysis(**overrides) -> AnalysisResult:
     return AnalysisResult(**defaults)
 
 
-class FakeLLM(LLMClient):
-    """Deterministic fake: returns queued results or raises queued exceptions."""
+def make_translation(**overrides) -> TranslationResult:
+    """Factory for a valid Russian TranslationResult."""
+    defaults = dict(
+        headline_ru="OFAC вносит танкеры теневого флота Suezmax в санкционный список",
+        summary_ru="OFAC добавил пять танкеров Suezmax в список SDN за нарушение "
+        "ценового потолка.",
+        key_facts_ru=["Пять танкеров Suezmax внесены в список", "Основание — нарушение ценового потолка"],
+        why_it_matters_ru="Внесенные суда теряют доступ к западному страхованию и услугам.",
+        impact_on_oil_transportation_ru="Сокращает доступный тоннаж Suezmax для подсанкционных перевозок.",
+        impact_on_pi_ru="Покрытие P&I прекращается для внесенных судов",
+        impact_on_hm_ru="не указано в источнике",
+        impact_on_war_risk_ru="не указано в источнике",
+        sanctions_or_compliance_implications_ru="Требуется проверка контрагентов по новым записям SDN.",
+        practical_business_implications_ru="Фрахтователи должны проверять статус судна до фиксации.",
+        recommended_review_points_ru=["Проверить флот по новым записям SDN"],
+    )
+    defaults.update(overrides)
+    return TranslationResult(**defaults)
 
-    def __init__(self, results=None, text_result: str = "# Report\n\n## 1. Executive Summary\n- ok"):
+
+class FakeLLM(LLMClient):
+    """Deterministic fake.
+
+    structured(): pops from `results` for AnalysisResult requests and from
+    `translation_results` for TranslationResult requests; falls back to the
+    factories when a queue is empty. Queue entries that are exceptions are
+    raised. text(): returns `text_result`.
+    """
+
+    def __init__(
+        self,
+        results=None,
+        translation_results=None,
+        text_result: str = "# Report\n\n## 1. Executive Summary\n- ok",
+    ):
         self.results = list(results or [])
+        self.translation_results = list(translation_results or [])
         self.text_result = text_result
         self.structured_calls = 0
+        self.translation_calls = 0
         self.text_calls = 0
 
     async def structured(self, system, user, output_model, model=None):
-        self.structured_calls += 1
-        if not self.results:
-            return make_analysis()
-        result = self.results.pop(0)
+        if output_model is TranslationResult:
+            self.translation_calls += 1
+            queue, fallback = self.translation_results, make_translation
+        else:
+            self.structured_calls += 1
+            queue, fallback = self.results, make_analysis
+        if not queue:
+            return fallback()
+        result = queue.pop(0)
         if isinstance(result, Exception):
             raise result
         return result

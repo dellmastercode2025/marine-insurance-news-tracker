@@ -18,52 +18,52 @@ router = Router(name="basic")
 
 WELCOME = (
     "🛢 <b>Maritime Tanker Intelligence Bot</b>\n\n"
-    "I monitor legally accessible public sources every hour and convert raw updates "
-    "into structured intelligence on:\n"
-    "• Oil tanker transportation (VLCC / Suezmax / Aframax / product tankers)\n"
-    "• Tanker freight markets\n"
-    "• Marine insurance: P&I, Hull &amp; Machinery, war risk, cargo\n"
-    "• Sanctions, licenses, enforcement and compliance\n"
-    "• Shipbuilding affecting oil tanker capacity\n"
-    "• Port, route and geopolitical risks\n\n"
-    "🚨 High-materiality events trigger urgent alerts.\n"
-    "📄 Daily Intelligence Brief at 09:30 and Weekly Analytical Report on Mondays "
-    "at 09:30 (Asia/Aqtau).\n\n"
-    "Use /help to see all commands, /settings to manage alert preferences."
+    "Я ежечасно отслеживаю легально доступные публичные источники и преобразую "
+    "новости в структурированную аналитику по темам:\n"
+    "• Танкерные перевозки нефти (VLCC / Suezmax / Aframax / продуктовые танкеры)\n"
+    "• Фрахтовый рынок танкеров\n"
+    "• Морское страхование: P&I, Hull &amp; Machinery, военные риски, грузы\n"
+    "• Санкции, лицензии, правоприменение и compliance\n"
+    "• Судостроение, влияющее на танкерный флот\n"
+    "• Портовые, маршрутные и геополитические риски\n\n"
+    "🚨 События высокой существенности приходят срочными уведомлениями.\n"
+    "📄 Ежедневная сводка в 09:30 и еженедельный отчет по понедельникам "
+    "в 09:30 (Asia/Aqtau). Публикации — на русском языке.\n\n"
+    "/help — все команды, /settings — настройка уведомлений."
 )
 
 HELP = (
-    "<b>Commands</b>\n\n"
-    "<b>Feeds</b>\n"
-    "/latest — latest 10 intelligence items\n"
-    "/high — latest high-materiality alerts\n"
-    "/sanctions — sanctions &amp; compliance updates\n"
-    "/insurance — marine insurance updates\n"
-    "/pi — P&amp;I updates\n"
-    "/hm — Hull &amp; Machinery updates\n"
-    "/warrisk — war risk updates\n"
-    "/market — tanker market updates\n"
-    "/vlcc /aframax /suezmax — segment updates\n"
-    "/shipbuilding — shipbuilding affecting oil tankers\n"
-    "/ports — port and route disruptions\n"
-    "/search &lt;keyword&gt; — search by company, vessel, IMO, insurer, port, "
-    "regulator, shipyard, country or topic\n\n"
-    "<b>Reports</b>\n"
-    "/daily — latest Daily Intelligence Brief\n"
-    "/weekly — latest Weekly Analytical Report\n\n"
-    "<b>Subscriptions</b>\n"
-    "/subscribe — subscription settings\n"
-    "/settings — manage alert preferences\n"
-    "/unsubscribe — disable alerts\n\n"
-    "<b>System</b>\n"
-    "/status — last monitoring run and next scheduled reports"
+    "<b>Команды</b>\n\n"
+    "<b>Ленты</b>\n"
+    "/latest — последние 10 обновлений\n"
+    "/high — обновления высокой существенности\n"
+    "/sanctions — санкции и compliance\n"
+    "/insurance — морское страхование\n"
+    "/pi — P&amp;I\n"
+    "/hm — Hull &amp; Machinery\n"
+    "/warrisk — военные риски\n"
+    "/market — рынок танкеров\n"
+    "/vlcc /aframax /suezmax — обновления по сегментам\n"
+    "/shipbuilding — судостроение (нефтяные танкеры)\n"
+    "/ports — порты и маршруты\n"
+    "/search &lt;слово&gt; — поиск по компании, судну, IMO, страховщику, порту, "
+    "регулятору, верфи, стране или теме\n\n"
+    "<b>Отчеты</b>\n"
+    "/daily — ежедневная аналитическая сводка\n"
+    "/weekly — еженедельный аналитический отчет\n\n"
+    "<b>Подписки</b>\n"
+    "/subscribe — настройки подписки\n"
+    "/settings — настройка уведомлений\n"
+    "/unsubscribe — отключить уведомления\n\n"
+    "<b>Система</b>\n"
+    "/status — последний цикл мониторинга и расписание отчетов"
 )
 
 HELP_ADMIN = (
-    "\n\n<b>Admin</b>\n"
-    "/run — trigger a monitoring run now\n"
-    "/approve &lt;telegram_id&gt; — grant a user access\n"
-    "/revoke &lt;telegram_id&gt; — remove a user's access"
+    "\n\n<b>Администратор</b>\n"
+    "/run — запустить мониторинг сейчас\n"
+    "/approve &lt;telegram_id&gt; — открыть пользователю доступ\n"
+    "/revoke &lt;telegram_id&gt; — закрыть доступ"
 )
 
 
@@ -83,25 +83,25 @@ async def cmd_status(message: Message, session: AsyncSession) -> None:
     run = await session.scalar(
         select(MonitoringRun).order_by(desc(MonitoringRun.id)).limit(1)
     )
-    lines = ["<b>System status</b>", ""]
+    lines = ["<b>Статус системы</b>", ""]
     if run is None:
-        lines.append("No monitoring runs recorded yet.")
+        lines.append("Циклы мониторинга еще не выполнялись.")
     else:
         lines += [
-            f"<b>Last monitoring run:</b> {local_datetime(run.started_at)}",
-            f"Status: {run.status} ({run.trigger})",
-            f"Sources checked: {run.sources_checked} (failed: {run.sources_failed})",
-            f"Items fetched: {run.items_fetched}, new: {run.items_new}",
-            f"Analyzed — High: {run.items_high} / Medium: {run.items_medium} / Low: {run.items_low}",
-            f"Filtered out: {run.items_prefiltered_out}, alerts sent: {run.alerts_sent}",
+            f"<b>Последний цикл мониторинга:</b> {local_datetime(run.started_at)}",
+            f"Статус: {run.status} ({run.trigger})",
+            f"Источников проверено: {run.sources_checked} (сбоев: {run.sources_failed})",
+            f"Записей получено: {run.items_fetched}, новых: {run.items_new}",
+            f"Проанализировано — High: {run.items_high} / Medium: {run.items_medium} / Low: {run.items_low}",
+            f"Отфильтровано: {run.items_prefiltered_out}, уведомлений отправлено: {run.alerts_sent}",
         ]
     from app.jobs.scheduler import get_next_run_times  # deferred: scheduler may be absent in tests
 
     next_times = get_next_run_times()
     lines.append("")
-    lines.append(f"<b>Next monitoring run:</b> {local_datetime(next_times.get('monitoring'))}")
-    lines.append(f"<b>Next Daily Brief:</b> {local_datetime(next_times.get('daily_report'))}")
-    lines.append(f"<b>Next Weekly Report:</b> {local_datetime(next_times.get('weekly_report'))}")
+    lines.append(f"<b>Следующий цикл мониторинга:</b> {local_datetime(next_times.get('monitoring'))}")
+    lines.append(f"<b>Следующая ежедневная сводка:</b> {local_datetime(next_times.get('daily_report'))}")
+    lines.append(f"<b>Следующий еженедельный отчет:</b> {local_datetime(next_times.get('weekly_report'))}")
     await message.answer("\n".join(lines))
 
 
@@ -113,19 +113,19 @@ async def cmd_run(message: Message, db_user: User) -> None:
     from app.bot.alerts import send_high_alert
     from app.pipeline.monitor import run_monitoring
 
-    await message.answer("Monitoring run started…")
+    await message.answer("Цикл мониторинга запущен…")
 
     async def _run() -> None:
         try:
             run = await run_monitoring(trigger="manual", alert_callback=send_high_alert)
             await message.answer(
-                f"Run finished: {run.items_new} new items, "
+                f"Цикл завершен: новых записей — {run.items_new}, "
                 f"H/M/L = {run.items_high}/{run.items_medium}/{run.items_low}, "
-                f"{run.alerts_sent} alerts. Status: {run.status}."
+                f"уведомлений — {run.alerts_sent}. Статус: {run.status}."
             )
         except Exception as exc:  # noqa: BLE001
             log.exception("Manual monitoring run failed")
-            await message.answer(f"Run failed: {type(exc).__name__}: {exc}")
+            await message.answer(f"Сбой цикла: {type(exc).__name__}: {exc}")
 
     asyncio.create_task(_run())
 
@@ -135,17 +135,17 @@ async def _set_approval(
     command: CommandObject, approved: bool,
 ) -> None:
     if not db_user.is_admin:
-        await message.answer("Admin command.")
+        await message.answer("Команда доступна только администратору.")
         return
     arg = (command.args or "").strip()
     if not arg.isdigit():
-        await message.answer(f"Usage: /{'approve' if approved else 'revoke'} &lt;telegram_id&gt;")
+        await message.answer(f"Использование: /{'approve' if approved else 'revoke'} &lt;telegram_id&gt;")
         return
     telegram_id = int(arg)
     user = await session.scalar(select(User).where(User.telegram_user_id == telegram_id))
     if user is None:
         if not approved:
-            await message.answer("User not found.")
+            await message.answer("Пользователь не найден.")
             return
         user = User(telegram_user_id=telegram_id, is_approved=True)
         session.add(user)
@@ -157,7 +157,8 @@ async def _set_approval(
         await ensure_default_subscriptions(session, user)
     await session.commit()
     await message.answer(
-        f"User <code>{telegram_id}</code> {'approved' if approved else 'revoked'}."
+        f"Пользователю <code>{telegram_id}</code> доступ "
+        f"{'открыт' if approved else 'закрыт'}."
     )
 
 

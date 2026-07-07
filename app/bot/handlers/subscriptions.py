@@ -13,22 +13,22 @@ from app.db.models import Subscription, SubscriptionTopic, User
 router = Router(name="subscriptions")
 
 TOPIC_LABELS: dict[str, str] = {
-    SubscriptionTopic.URGENT_HIGH.value: "🚨 Urgent high-materiality alerts",
-    SubscriptionTopic.DAILY_BRIEF.value: "📄 Daily briefing",
-    SubscriptionTopic.WEEKLY_REPORT.value: "📊 Weekly report",
-    SubscriptionTopic.SANCTIONS.value: "⚖️ Sanctions",
+    SubscriptionTopic.URGENT_HIGH.value: "🚨 Срочные уведомления (High)",
+    SubscriptionTopic.DAILY_BRIEF.value: "📄 Ежедневная сводка",
+    SubscriptionTopic.WEEKLY_REPORT.value: "📊 Еженедельный отчет",
+    SubscriptionTopic.SANCTIONS.value: "⚖️ Санкции",
     SubscriptionTopic.PI.value: "🛡 P&I",
     SubscriptionTopic.HM.value: "🔧 Hull & Machinery",
-    SubscriptionTopic.WAR_RISK.value: "💥 War risk",
-    SubscriptionTopic.TANKER_MARKET.value: "🛢 Oil tanker market",
+    SubscriptionTopic.WAR_RISK.value: "💥 Военные риски",
+    SubscriptionTopic.TANKER_MARKET.value: "🛢 Рынок нефтяных танкеров",
     SubscriptionTopic.VLCC.value: "🚢 VLCC",
     SubscriptionTopic.AFRAMAX.value: "🚢 Aframax",
     SubscriptionTopic.SUEZMAX.value: "🚢 Suezmax",
-    SubscriptionTopic.SHIPBUILDING.value: "🏗 Shipbuilding",
-    SubscriptionTopic.PORT_DISRUPTION.value: "⚓ Port disruption",
-    SubscriptionTopic.FREIGHT.value: "📈 Freight market",
-    SubscriptionTopic.ROUTE_DISRUPTION.value: "🗺 Route disruption",
-    SubscriptionTopic.GEOPOLITICAL.value: "🌍 Geopolitical risk",
+    SubscriptionTopic.SHIPBUILDING.value: "🏗 Судостроение",
+    SubscriptionTopic.PORT_DISRUPTION.value: "⚓ Портовые сбои",
+    SubscriptionTopic.FREIGHT.value: "📈 Фрахтовый рынок",
+    SubscriptionTopic.ROUTE_DISRUPTION.value: "🗺 Маршрутные сбои",
+    SubscriptionTopic.GEOPOLITICAL.value: "🌍 Геополитические риски",
 }
 
 
@@ -53,9 +53,9 @@ def _keyboard(subs: dict[str, Subscription]) -> InlineKeyboardMarkup:
 
 
 SETTINGS_TEXT = (
-    "<b>Alert preferences</b>\n\n"
-    "Tap a topic to toggle it. Urgent alerts are sent only for High-materiality "
-    "items in topics you keep enabled."
+    "<b>Настройка уведомлений</b>\n\n"
+    "Нажмите на тему, чтобы включить или отключить ее. Срочные уведомления "
+    "отправляются только по событиям высокой существенности (High) в включенных темах."
 )
 
 
@@ -78,8 +78,8 @@ async def cmd_unsubscribe(message: Message, session: AsyncSession, db_user: User
             subs[topic].enabled = False
     await session.commit()
     await message.answer(
-        "Alerts disabled (urgent alerts, daily briefing, weekly report). "
-        "Use /settings to re-enable at any time."
+        "Уведомления отключены (срочные уведомления, ежедневная сводка, "
+        "еженедельный отчет). Включить снова можно в /settings."
     )
 
 
@@ -87,7 +87,7 @@ async def cmd_unsubscribe(message: Message, session: AsyncSession, db_user: User
 async def cb_toggle(callback: CallbackQuery, session: AsyncSession, db_user: User) -> None:
     topic = callback.data.split(":", 1)[1]
     if topic not in TOPIC_LABELS:
-        await callback.answer("Unknown topic")
+        await callback.answer("Неизвестная тема")
         return
     subs = await _subscription_map(session, db_user)
     sub = subs.get(topic)
@@ -101,5 +101,5 @@ async def cb_toggle(callback: CallbackQuery, session: AsyncSession, db_user: Use
     if callback.message:
         await callback.message.edit_reply_markup(reply_markup=_keyboard(subs))
     await callback.answer(
-        f"{TOPIC_LABELS[topic]}: {'on' if sub.enabled else 'off'}"
+        f"{TOPIC_LABELS[topic]}: {'вкл' if sub.enabled else 'выкл'}"
     )

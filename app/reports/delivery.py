@@ -43,18 +43,18 @@ async def send_report_to_subscribers(session: AsyncSession, report: Report) -> i
 
     filename = (
         f"{'daily-brief' if report.report_type == 'daily' else 'weekly-report'}-"
-        f"{report.period_end.date().isoformat()}.md"
+        f"{report.period_end.date().isoformat()}-{report.publication_language}.md"
     )
     sent = 0
     for user in users:
         try:
-            for chunk in chunk_message(report.telegram_summary or "Report generated."):
+            for chunk in chunk_message(report.publication_summary or "Отчет сформирован."):
                 await bot.send_message(
                     user.telegram_user_id, chunk, disable_web_page_preview=True
                 )
             await bot.send_document(
                 user.telegram_user_id,
-                BufferedInputFile(report.content_md.encode("utf-8"), filename=filename),
+                BufferedInputFile(report.publication_content.encode("utf-8"), filename=filename),
             )
             sent += 1
         except Exception as exc:  # noqa: BLE001

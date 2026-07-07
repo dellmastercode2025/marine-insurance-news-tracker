@@ -18,6 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.ai.analyzer import AnalysisFailed, analyze_raw_item
 from app.ai.client import get_llm_client
+from app.ai.translator import TranslationFailed, apply_translation, translate_item
 from app.config import get_settings
 from app.db.engine import get_session_factory
 from app.db.models import (
@@ -159,6 +160,16 @@ async def _process_new_item(
     materiality = apply_materiality_rules(analysis)
     item = await create_intelligence_item(session, analysis, raw_item, source, materiality)
     raw_item.status = RawItemStatus.ANALYZED.value
+
+    # Russian publication version (default output language). A failed
+    # translation must not block publication — senders fall back to English.
+    run.llm_calls += 1
+    try:
+        translation = await translate_item(get_llm_client(), item)
+        apply_translation(item, translation)
+    except TranslationFailed as exc:
+        item.publication_ready_ru = False
+        log.warning("Russian translation failed for item %s: %s", item.id, exc.detail)
 
     counter = {"High": "items_high", "Medium": "items_medium", "Low": "items_low"}[materiality]
     setattr(run, counter, getattr(run, counter) + 1)

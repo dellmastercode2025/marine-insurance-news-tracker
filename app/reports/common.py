@@ -84,10 +84,11 @@ def digest_for_llm(items: list[IntelligenceItem]) -> str:
 
 
 def extract_executive_summary(markdown: str, fallback_title: str) -> str:
-    """Pull the executive-summary section out of the report for the concise
-    Telegram message (summary first, full report as attachment)."""
+    """Pull the executive-summary section (## 1., any language) out of the
+    report for the concise Telegram message (summary first, full report as
+    attachment)."""
     match = re.search(
-        r"##\s*1\.?\s*(?:Weekly\s+)?Executive Summary\s*\n(.*?)(?=\n##\s|\Z)",
+        r"##\s*1\.?[^\n]*\n(.*?)(?=\n##\s|\Z)",
         markdown,
         re.DOTALL | re.IGNORECASE,
     )
@@ -102,7 +103,7 @@ def _html_escape(text: str) -> str:
     return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
 
-EMPTY_PERIOD_TEMPLATE = (
+EMPTY_PERIOD_TEMPLATE_EN = (
     "# {title} — {date}\n\n"
     "## 1. Executive Summary\n"
     "- No material intelligence items were detected in the reporting period.\n\n"
@@ -110,6 +111,20 @@ EMPTY_PERIOD_TEMPLATE = (
     "shipbuilding, ports and routes) were checked; no items met relevance and "
     "materiality thresholds.\n"
 )
+
+EMPTY_PERIOD_TEMPLATE_RU = (
+    "# {title_ru} — {date}\n\n"
+    "## 1. Резюме\n"
+    "- За отчетный период существенных обновлений не выявлено.\n\n"
+    "Все отслеживаемые категории источников (санкции, морское страхование, рынок "
+    "танкеров, судостроение, порты и маршруты) проверены; обновлений, отвечающих "
+    "критериям релевантности и существенности, не обнаружено.\n"
+)
+
+REPORT_TITLE_RU = {
+    "Daily Intelligence Brief": "Ежедневная аналитическая сводка",
+    "Weekly Analytical Report": "Еженедельный аналитический отчет",
+}
 
 
 async def compose_report(
@@ -124,9 +139,13 @@ async def compose_report(
     settings = get_settings()
     items = await items_in_period(session, start, end, max_items)
     end_local = end.astimezone(settings.tz).strftime("%Y-%m-%d")
+    title_ru = REPORT_TITLE_RU.get(title, title)
+    languages = ["en"]
 
     if not items:
-        content = EMPTY_PERIOD_TEMPLATE.format(title=title, date=end_local)
+        content_en = EMPTY_PERIOD_TEMPLATE_EN.format(title=title, date=end_local)
+        content_ru = EMPTY_PERIOD_TEMPLATE_RU.format(title_ru=title_ru, date=end_local)
+        languages.append("ru")
     else:
         system = load_prompt(prompt_file).replace("{date}", end_local)
         user = (
@@ -134,18 +153,40 @@ async def compose_report(
             f"{end.astimezone(settings.tz):%Y-%m-%d %H:%M} ({settings.app_timezone}).\n"
             f"Intelligence items (JSON):\n{digest_for_llm(items)}"
         )
-        content = await get_llm_client().text(system, user, model=settings.report_model)
+        content_en = await get_llm_client().text(system, user, model=settings.report_model)
+
+        # Russian publication version — the default delivery language.
+        from app.ai.translator import translate_report_markdown
+
+        content_ru = None
+        try:
+            content_ru = await translate_report_markdown(
+                get_llm_client(), content_en, model=settings.report_model
+            )
+            languages.append("ru")
+        except Exception as exc:  # noqa: BLE001 - fall back to English delivery
+            log.warning("Russian report translation failed: %s", exc)
 
     report = Report(
         report_type=report_type,
         period_start=start,
         period_end=end,
-        content_md=content,
-        telegram_summary=extract_executive_summary(content, f"{title} — {end_local}"),
+        content_md_en=content_en,
+        content_md_ru=content_ru,
+        generated_language_versions=languages,
+        telegram_summary=extract_executive_summary(content_en, f"{title} — {end_local}"),
+        telegram_summary_ru=(
+            extract_executive_summary(content_ru, f"{title_ru} — {end_local}")
+            if content_ru
+            else None
+        ),
         item_count=len(items),
         status="generated",
     )
     session.add(report)
     await session.commit()
-    log.info("Generated %s report %s covering %d items", report_type, report.id, len(items))
+    log.info(
+        "Generated %s report %s covering %d items (languages: %s)",
+        report_type, report.id, len(items), ",".join(languages),
+    )
     return report

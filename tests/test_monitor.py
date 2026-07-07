@@ -84,6 +84,7 @@ async def test_full_monitoring_run(factory, monkeypatch):
     assert run.items_new == 3
     assert run.items_prefiltered_out == 1  # LNG item never reaches the LLM
     assert fake_llm.structured_calls == 1  # duplicate merged without a second call
+    assert fake_llm.translation_calls == 1  # LNG/duplicate never reach translation
     assert run.items_high == 1
     assert run.alerts_sent == 1
     assert len(alerts_sent) == 1
@@ -92,6 +93,11 @@ async def test_full_monitoring_run(factory, monkeypatch):
         item = await session.scalar(select(IntelligenceItem))
         assert item.materiality == "High"
         assert len(item.all_source_urls) == 2  # both outlets preserved
+        # Russian publication version generated in the pipeline
+        assert item.publication_ready_ru is True
+        assert item.headline_ru and "Suezmax" in item.headline_ru
+        assert item.summary_ru
+        assert item.impact_on_hm_ru == "не указано в источнике"
         statuses = dict(
             (await session.execute(select(RawItem.url, RawItem.status))).all()
         )
@@ -109,6 +115,7 @@ async def test_full_monitoring_run(factory, monkeypatch):
     assert run2.items_new == 0
     assert run2.alerts_sent == 0
     assert fake_llm2.structured_calls == 0
+    assert fake_llm2.translation_calls == 0
     assert len(alerts_sent) == 1
 
     async with factory() as session:

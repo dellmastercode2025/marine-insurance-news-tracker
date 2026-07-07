@@ -10,7 +10,13 @@ from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import select
 
-from app.ai.schemas import AnalysisResult, EntityBundle, InsuranceImplications
+from app.ai.schemas import (
+    AnalysisResult,
+    EntityBundle,
+    InsuranceImplications,
+    TranslationResult,
+)
+from app.ai.translator import apply_translation
 from app.db.engine import get_session_factory, init_db
 from app.db.models import MonitoringRun, RawItem, Source
 from app.db.seed import seed_sources
@@ -260,6 +266,126 @@ SAMPLES: list[dict] = [
 ]
 
 
+RU_TRANSLATIONS: dict[str, dict] = {
+    "sample-ofac-shadow-fleet-designation": dict(
+        headline_ru="OFAC вносит в санкционный список 14 танкеров теневого флота с российской нефтью",
+        summary_ru="OFAC добавил в список SDN 14 нефтяных танкеров (преимущественно Aframax и "
+        "Suezmax) за перевозку российской нефти выше ценового потолка. Также внесены две "
+        "судоходные управляющие компании из ОАЭ.",
+        key_facts_ru=[
+            "Внесено 14 танкеров (Aframax/Suezmax)",
+            "Внесены два менеджера из ОАЭ",
+            "Основание — нарушение ценового потолка",
+        ],
+        why_it_matters_ru="Внесенные танкеры теряют доступ к западному страхованию, портам и "
+        "услугам; контрагенты несут риск вторичных санкций.",
+        impact_on_oil_transportation_ru="Выводит около 1,5 млн dwt из тоннажа для подсанкционных "
+        "перевозок; сокращает доступность Aframax в Черном море.",
+        impact_on_pi_ru="Покрытие P&I прекращается для внесенных судов согласно санкционным оговоркам",
+        impact_on_hm_ru="не указано в источнике",
+        impact_on_war_risk_ru="не указано в источнике",
+        sanctions_or_compliance_implications_ru="Требуется немедленная проверка контрагентов и "
+        "зафрахтованного тоннажа по новым записям SDN.",
+        practical_business_implications_ru="Сделки с внесенными менеджерами требуют пересмотра; "
+        "платежи могут быть заблокированы.",
+        recommended_review_points_ru=[
+            "Проверить флот и списки контрагентов по новым записям SDN",
+            "Проверить действующие чартеры на участие внесенных менеджеров",
+        ],
+    ),
+    "sample-jwc-red-sea-expansion": dict(
+        headline_ru="JWC расширяет зону военных рисков в Красном море после атаки на танкер",
+        summary_ru="Joint War Committee (JWC) расширил зону повышенного риска в Красном море и "
+        "Аденском заливе после ракетной атаки на продуктовый танкер; для транзитов требуется "
+        "уведомление и дополнительная премия по военным рискам.",
+        key_facts_ru=["Зона расширена", "Атакован продуктовый танкер", "Требуются уведомления и AP"],
+        why_it_matters_ru="Дополнительные премии по военным рискам для транзитов через Красное море "
+        "вырастут; часть судовладельцев может перенаправить суда вокруг мыса Доброй Надежды.",
+        impact_on_oil_transportation_ru="Удлинение маршрутов и рост затрат для перевозок "
+        "нефтепродуктов между Заливом и Европой.",
+        impact_on_pi_ru="не указано в источнике",
+        impact_on_hm_ru="Страховщики H&M могут ввести навигационные ограничения (warranties)",
+        impact_on_war_risk_ru="Для расширенной зоны действуют дополнительная премия и "
+        "уведомление за 48 часов",
+        sanctions_or_compliance_implications_ru="не указано в источнике",
+        practical_business_implications_ru="Необходимо обновить расчеты рейсовых затрат и "
+        "оговорки о военных рисках в чартерах.",
+        recommended_review_points_ru=[
+            "Проверить условия AP по военным рискам для транзитов через Красное море",
+            "Проверить оговорки CONWARTIME/VOYWAR в чартерах",
+        ],
+    ),
+    "sample-vlcc-rates-jump": dict(
+        headline_ru="Ставки VLCC выросли на 25% на фоне активного фрахтования на Ближнем Востоке",
+        summary_ru="Спотовые доходы VLCC на направлении Персидский залив — Китай выросли примерно "
+        "на 25% за неделю на фоне высокой активности фрахтования и сокращения списка свободных судов.",
+        key_facts_ru=["TCE Персидский залив — Китай +25% за неделю", "Список свободных судов сокращается"],
+        why_it_matters_ru="Устойчивый рост в сегменте VLCC поддерживает весь рынок нефтяных танкеров "
+        "и указывает на уверенный спрос на нефть в Азии.",
+        impact_on_oil_transportation_ru="Рост фрахтовых затрат на дальнемагистральные перевозки нефти.",
+        impact_on_pi_ru="не указано в источнике",
+        impact_on_hm_ru="не указано в источнике",
+        impact_on_war_risk_ru="не указано в источнике",
+        sanctions_or_compliance_implications_ru="не указано в источнике",
+        practical_business_implications_ru="Фрахтователям следует ожидать более высоких ставок; "
+        "судовладельцы могут придерживать тоннаж.",
+        recommended_review_points_ru=["Пересмотреть фрахтовые бюджеты на погрузки VLCC в 3 квартале"],
+    ),
+    "sample-suezmax-newbuild-order": dict(
+        headline_ru="Корейская верфь получила заказ на шесть новостроев Suezmax с поставкой в 2028 году",
+        summary_ru="Корейская верфь подписала контракт на шесть танкеров Suezmax с поставкой в 2028 "
+        "году; портфель заказов Suezmax достигает около 12% действующего флота.",
+        key_facts_ru=["Заказано шесть новостроев Suezmax", "Поставка в 2028 году", "Портфель заказов ~12% флота"],
+        why_it_matters_ru="Рост портфеля заказов создает среднесрочное давление предложения в "
+        "сегменте Suezmax с 2028 года.",
+        impact_on_oil_transportation_ru="Краткосрочного эффекта нет; вместимость флота растет с 2028 года.",
+        impact_on_pi_ru="не указано в источнике",
+        impact_on_hm_ru="не указано в источнике",
+        impact_on_war_risk_ru="не указано в источнике",
+        sanctions_or_compliance_implications_ru="не указано в источнике",
+        practical_business_implications_ru="Для новых заказов Suezmax — длинные очереди стапелей и "
+        "высокие цены на новострои.",
+        recommended_review_points_ru=["Ежеквартально отслеживать отношение портфеля заказов Suezmax к флоту"],
+    ),
+    "sample-pi-circular-sts": dict(
+        headline_ru="Клуб P&I выпустил циркуляр о санкционном комплаенсе при STS-операциях танкеров",
+        summary_ru="Крупный клуб P&I разослал обновленные требования к due diligence при перевалке "
+        "нефти с судна на судно (STS), включая проверку непрерывности сигнала AIS.",
+        key_facts_ru=["Обновлены требования к due diligence при STS", "Ожидается проверка непрерывности AIS"],
+        why_it_matters_ru="Покрытие может быть поставлено под сомнение при недокументированном "
+        "due diligence по STS; ожидания клуба становятся фактическим рыночным стандартом.",
+        impact_on_oil_transportation_ru="Дополнительная документарная нагрузка для перевозок с "
+        "интенсивными STS-операциями.",
+        impact_on_pi_ru="Несоблюдение рекомендаций может поставить под угрозу покрытие P&I при "
+        "инцидентах во время STS",
+        impact_on_hm_ru="не указано в источнике",
+        impact_on_war_risk_ru="не указано в источнике",
+        sanctions_or_compliance_implications_ru="Клубы увязывают покрытие с санкционным due "
+        "diligence; разрывы AIS становятся риском для покрытия.",
+        practical_business_implications_ru="Операционные службы должны хранить оценки рисков STS "
+        "и записи AIS.",
+        recommended_review_points_ru=["Обновить процедуры STS в соответствии с рекомендациями клуба"],
+    ),
+    "sample-turkish-straits-delays": dict(
+        headline_ru="Задержки транзита через Турецкие проливы достигают 5 суток из-за тумана и проверок",
+        summary_ru="Транзиты танкеров через Босфор задерживаются на 3–5 суток из-за закрытий по "
+        "туману и очереди на проверку подтверждающих писем P&I.",
+        key_facts_ru=["Задержки в Босфоре 3–5 суток", "Закрытия из-за тумана", "Проверки писем удлиняют очередь"],
+        why_it_matters_ru="Задержки связывают тоннаж и увеличивают риск демереджа по отгрузкам "
+        "черноморской нефти и CPC.",
+        impact_on_oil_transportation_ru="Фактическое сокращение предложения Suezmax/Aframax в "
+        "Черноморском бассейне на время очередей.",
+        impact_on_pi_ru="не указано в источнике",
+        impact_on_hm_ru="не указано в источнике",
+        impact_on_war_risk_ru="не указано в источнике",
+        sanctions_or_compliance_implications_ru="не указано в источнике",
+        practical_business_implications_ru="Планирование лейкенов и условия демереджа требуют "
+        "запаса на задержки в проливах.",
+        recommended_review_points_ru=["Заложить буфер на транзитные задержки в рейсовые планы по Черному морю"],
+    ),
+}
+
+
 async def main() -> None:
     await init_db()
     factory = get_session_factory()
@@ -312,6 +438,9 @@ async def main() -> None:
             materiality = apply_materiality_rules(analysis)
             item = await create_intelligence_item(session, analysis, raw, demo_source, materiality)
             item.detected_at = published
+            translation_fields = RU_TRANSLATIONS.get(sample["analysis"]["event_key"])
+            if translation_fields:
+                apply_translation(item, TranslationResult(**translation_fields))
             run.items_fetched += 1
             run.items_new += 1
             counter = {"High": "items_high", "Medium": "items_medium", "Low": "items_low"}[materiality]

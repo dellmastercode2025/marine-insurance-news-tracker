@@ -16,6 +16,16 @@ impact on oil transportation, insurance implications (P&I / H&M / war risk),
 sanctions/compliance implications, and practical review actions. LNG/gas and
 general shipping topics are excluded.
 
+**Russian is the default publication language.** Analysis runs in English (or
+the source language); before anything is sent, a second AI pass produces a
+polished business-Russian version (`app/ai/prompts/translate_to_russian.md`):
+faithful to the original, no added facts, no softened risks, standard
+abbreviations (P&I, H&M, VLCC, IMO, OFAC, …) kept in English, and
+"not available in source" rendered as «не указано в источнике». Alerts, list
+commands and Daily/Weekly reports are delivered in Russian, falling back to
+English only if a translation failed (`publication_ready_ru = false`). Both
+report language versions are stored (`content_md_en` / `content_md_ru`).
+
 Everything runs in the cloud in a single container — the user interacts
 through Telegram only. No local scripts, databases or schedulers required.
 
@@ -30,7 +40,8 @@ one process / one container
 │     → keyword prefilter (hard LNG/gas exclusion)
 │     → OpenAI structured analysis (Pydantic-validated JSON, retry once)
 │     → event-level dedup & merge (all sources kept, confidence boost)
-│     → materiality rules → store → High-materiality alerts (send-once)
+│     → materiality rules → Russian publication translation
+│     → store → High-materiality alerts in Russian (send-once)
 ├── Reports: Daily Brief 09:30 Asia/Aqtau, Weekly Report Mon 09:30 Asia/Aqtau
 ├── APScheduler (all times in APP_TIMEZONE, default Asia/Aqtau)
 └── FastAPI: /healthz + token-gated manual triggers
@@ -173,6 +184,9 @@ pytest
 
 Covers: keyword prefilter and LNG/gas exclusion, AI schema validation and
 retry/analysis-failed policy, both dedup stages (URL/title/simhash and
-event-key merge with confidence boost), materiality rule floors, Telegram
-formatting (required alert sections, 4096-char chunking), and an end-to-end
-monitoring run with faked fetchers and a fake LLM.
+event-key merge with confidence boost), materiality rule floors, the Russian
+publication layer (fields generated in the pipeline, «не указано в источнике»
+normalization, preserved P&I/H&M/VLCC abbreviations, Russian-default Telegram
+output, dual-language reports), Telegram formatting (required alert sections,
+4096-char chunking), and an end-to-end monitoring run with faked fetchers and
+a fake LLM.

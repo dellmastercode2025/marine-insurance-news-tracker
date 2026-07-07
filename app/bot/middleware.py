@@ -20,7 +20,10 @@ from app.db.models import Subscription, SubscriptionTopic, User
 
 log = logging.getLogger(__name__)
 
-ACCESS_DENIED_TEXT = "Access restricted. Please contact the administrator."
+ACCESS_DENIED_TEXT = (
+    "Access restricted. Please contact the administrator.\n"
+    "Доступ ограничен. Обратитесь к администратору."
+)
 
 DEFAULT_TOPICS_ON = [topic.value for topic in SubscriptionTopic]
 

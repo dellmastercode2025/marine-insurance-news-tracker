@@ -47,30 +47,30 @@ async def _send_list(message: Message, title: str, items: list[IntelligenceItem]
 @router.message(Command("latest"))
 async def cmd_latest(message: Message, session: AsyncSession) -> None:
     items = await query_items(session)
-    await _send_list(message, "Latest intelligence", items)
+    await _send_list(message, "Последние обновления", items)
 
 
 @router.message(Command("high"))
 async def cmd_high(message: Message, session: AsyncSession) -> None:
     items = await query_items(session, materiality="High")
     if not items:
-        await message.answer("No high-materiality items yet.")
+        await message.answer("Обновлений высокой существенности пока нет.")
         return
     blocks = [high_item_block(item) for item in items]
-    for chunk in chunk_message("🚨 <b>High-materiality updates</b>\n\n" + "\n\n".join(blocks)):
+    for chunk in chunk_message("🚨 <b>Обновления высокой существенности</b>\n\n" + "\n\n".join(blocks)):
         await message.answer(chunk, disable_web_page_preview=True)
 
 
 @router.message(Command("sanctions"))
 async def cmd_sanctions(message: Message, session: AsyncSession) -> None:
     items = await query_items(session, update_types=["sanctions", "regulation"])
-    await _send_list(message, "Sanctions & compliance", items)
+    await _send_list(message, "Санкции и compliance", items)
 
 
 @router.message(Command("insurance"))
 async def cmd_insurance(message: Message, session: AsyncSession) -> None:
     items = await query_items(session, update_types=["insurance", "pi", "hm", "war_risk"])
-    await _send_list(message, "Marine insurance", items)
+    await _send_list(message, "Морское страхование", items)
 
 
 @router.message(Command("pi"))
@@ -82,19 +82,19 @@ async def cmd_pi(message: Message, session: AsyncSession) -> None:
 @router.message(Command("hm"))
 async def cmd_hm(message: Message, session: AsyncSession) -> None:
     items = await query_items(session, update_types=["hm"])
-    await _send_list(message, "Hull & Machinery", items)
+    await _send_list(message, "Hull & Machinery (H&M)", items)
 
 
 @router.message(Command("warrisk"))
 async def cmd_warrisk(message: Message, session: AsyncSession) -> None:
     items = await query_items(session, update_types=["war_risk"])
-    await _send_list(message, "War risk", items)
+    await _send_list(message, "Военные риски", items)
 
 
 @router.message(Command("market"))
 async def cmd_market(message: Message, session: AsyncSession) -> None:
     items = await query_items(session, update_types=["tanker_market", "freight"])
-    await _send_list(message, "Tanker market", items)
+    await _send_list(message, "Рынок танкеров", items)
 
 
 @router.message(Command("vlcc"))
@@ -118,13 +118,13 @@ async def cmd_suezmax(message: Message, session: AsyncSession) -> None:
 @router.message(Command("shipbuilding"))
 async def cmd_shipbuilding(message: Message, session: AsyncSession) -> None:
     items = await query_items(session, update_types=["shipbuilding"])
-    await _send_list(message, "Shipbuilding (oil tankers)", items)
+    await _send_list(message, "Судостроение (нефтяные танкеры)", items)
 
 
 @router.message(Command("ports"))
 async def cmd_ports(message: Message, session: AsyncSession) -> None:
     items = await query_items(session, update_types=["port", "route", "geopolitical"])
-    await _send_list(message, "Port & route disruptions", items)
+    await _send_list(message, "Порты и маршруты", items)
 
 
 @router.message(Command("search"))
@@ -132,10 +132,10 @@ async def cmd_search(message: Message, session: AsyncSession, command: CommandOb
     keyword = (command.args or "").strip()
     if not keyword:
         await message.answer(
-            "Usage: /search &lt;keyword&gt;\n"
-            "Search by company, vessel, IMO number, insurer, P&amp;I club, port, "
-            "regulator, shipyard, country or topic."
+            "Использование: /search &lt;ключевое слово&gt;\n"
+            "Поиск по компании, судну, номеру IMO, страховщику, клубу P&amp;I, порту, "
+            "регулятору, верфи, стране или теме."
         )
         return
     items = await query_items(session, search=keyword)
-    await _send_list(message, f"Search: {keyword}", items)
+    await _send_list(message, f"Поиск: {keyword}", items)

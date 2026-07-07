@@ -18,16 +18,21 @@ router = Router(name="reports")
 
 
 async def deliver_report(message: Message, report: Report) -> None:
-    summary = report.telegram_summary or "Report generated."
+    summary = report.publication_summary or "Отчет сформирован."
     for chunk in chunk_message(summary):
         await message.answer(chunk, disable_web_page_preview=True)
     filename = (
         f"{'daily-brief' if report.report_type == 'daily' else 'weekly-report'}-"
-        f"{report.period_end.date().isoformat()}.md"
+        f"{report.period_end.date().isoformat()}-{report.publication_language}.md"
     )
+    caption = (
+        "Полная ежедневная аналитическая сводка"
+        if report.report_type == "daily"
+        else "Полный еженедельный аналитический отчет"
+    ) + f" — {local_date(report.period_end)}"
     await message.answer_document(
-        BufferedInputFile(report.content_md.encode("utf-8"), filename=filename),
-        caption=f"Full {'Daily Intelligence Brief' if report.report_type == 'daily' else 'Weekly Analytical Report'} — {local_date(report.period_end)}",
+        BufferedInputFile(report.publication_content.encode("utf-8"), filename=filename),
+        caption=caption,
     )
 
 
@@ -44,7 +49,7 @@ async def _latest_or_generate(
         await deliver_report(message, report)
         return
 
-    await message.answer("No stored report yet — generating one now, this may take a minute…")
+    await message.answer("Сохраненного отчета пока нет — формирую новый, это может занять минуту…")
     try:
         if report_type == "daily":
             from app.reports.daily import generate_daily_report
@@ -56,7 +61,7 @@ async def _latest_or_generate(
             report = await generate_weekly_report(session)
     except Exception as exc:  # noqa: BLE001
         log.exception("On-demand %s report generation failed", report_type)
-        await message.answer(f"Report generation failed: {type(exc).__name__}: {exc}")
+        await message.answer(f"Не удалось сформировать отчет: {type(exc).__name__}: {exc}")
         return
     await deliver_report(message, report)
 

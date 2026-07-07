@@ -226,6 +226,20 @@ class IntelligenceItem(TimestampMixin, Base):
     # Optional AI-produced tables for report sections: [{title, columns, rows}]
     report_tables: Mapped[list | None] = mapped_column(PortableJSON, default=list)
 
+    # Russian publication version (default Telegram output language).
+    headline_ru: Mapped[str | None] = mapped_column(Text)
+    summary_ru: Mapped[str | None] = mapped_column(Text)
+    key_facts_ru: Mapped[list | None] = mapped_column(PortableJSON, default=list)
+    why_it_matters_ru: Mapped[str | None] = mapped_column(Text)
+    impact_on_oil_transportation_ru: Mapped[str | None] = mapped_column(Text)
+    impact_on_pi_ru: Mapped[str | None] = mapped_column(Text)
+    impact_on_hm_ru: Mapped[str | None] = mapped_column(Text)
+    impact_on_war_risk_ru: Mapped[str | None] = mapped_column(Text)
+    sanctions_or_compliance_implications_ru: Mapped[str | None] = mapped_column(Text)
+    practical_business_implications_ru: Mapped[str | None] = mapped_column(Text)
+    recommended_review_points_ru: Mapped[list | None] = mapped_column(PortableJSON, default=list)
+    publication_ready_ru: Mapped[bool] = mapped_column(Boolean, default=False)
+
     materiality: Mapped[str] = mapped_column(String(10))
     confidence: Mapped[str] = mapped_column(String(10))
     classification: Mapped[str] = mapped_column(String(60))
@@ -321,11 +335,27 @@ class Report(TimestampMixin, Base):
     report_type: Mapped[str] = mapped_column(String(10))  # daily | weekly
     period_start: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     period_end: Mapped[datetime] = mapped_column(DateTime(timezone=True))
-    content_md: Mapped[str] = mapped_column(Text)
-    telegram_summary: Mapped[str | None] = mapped_column(Text)
+    content_md_en: Mapped[str] = mapped_column(Text)
+    content_md_ru: Mapped[str | None] = mapped_column(Text)
+    generated_language_versions: Mapped[list | None] = mapped_column(PortableJSON, default=list)
+    telegram_summary: Mapped[str | None] = mapped_column(Text)  # English
+    telegram_summary_ru: Mapped[str | None] = mapped_column(Text)
     item_count: Mapped[int] = mapped_column(Integer, default=0)
     generated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
     status: Mapped[str] = mapped_column(String(20), default="generated")  # generated|sent|failed
+
+    @property
+    def publication_content(self) -> str:
+        """Russian is the default publication language; English is the fallback."""
+        return self.content_md_ru or self.content_md_en
+
+    @property
+    def publication_summary(self) -> str | None:
+        return self.telegram_summary_ru or self.telegram_summary
+
+    @property
+    def publication_language(self) -> str:
+        return "ru" if self.content_md_ru else "en"
 
 
 class MonitoringRun(TimestampMixin, Base):

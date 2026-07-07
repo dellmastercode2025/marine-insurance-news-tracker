@@ -106,3 +106,26 @@ class AnalysisResult(BaseModel):
         "deduplication, e.g. 'ofac-designation-2026-07-suezmax-shadow-fleet'. Same event "
         "reported by different outlets must produce the same slug."
     )
+
+
+class TranslationResult(BaseModel):
+    """Polished Russian publication version of an intelligence item.
+
+    Business Russian, faithful to the original: no added facts, no softened
+    risks, no removed uncertainty. Standard maritime/insurance abbreviations
+    (P&I, H&M, VLCC, IMO, OFAC, OFSI, EU, UK, US) stay in English.
+    Where the original says "not available in source", the Russian version
+    says "не указано в источнике".
+    """
+
+    headline_ru: str
+    summary_ru: str
+    key_facts_ru: list[str]
+    why_it_matters_ru: str
+    impact_on_oil_transportation_ru: str
+    impact_on_pi_ru: str
+    impact_on_hm_ru: str
+    impact_on_war_risk_ru: str
+    sanctions_or_compliance_implications_ru: str
+    practical_business_implications_ru: str
+    recommended_review_points_ru: list[str]
