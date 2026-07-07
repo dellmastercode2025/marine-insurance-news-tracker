@@ -18,6 +18,7 @@ dependencies = [
     "apscheduler>=3.10,<4",
     "openai>=1.40",
     "feedparser>=6.0",
+    "beautifulsoup4>=4.12",
     "httpx>=0.27",
     "pydantic>=2.7",
     "pydantic-settings>=2.2",
