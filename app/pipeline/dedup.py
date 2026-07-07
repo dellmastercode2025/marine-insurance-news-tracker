@@ -26,6 +26,10 @@ from app.pipeline.normalize import hamming_distance, normalize_title, simhash64
 log = logging.getLogger(__name__)
 
 SIMHASH_MAX_DISTANCE = 6
+# Event-level headline matching tolerates more drift (rewordings across
+# outlets); still gated by same update_type and the event window. Unrelated
+# maritime headlines measure ~26-35 bits apart.
+EVENT_HEADLINE_MAX_DISTANCE = 10
 RAW_WINDOW_DAYS = 3
 EVENT_WINDOW_DAYS = 7
 RELIABLE_AUTHORITY_RANK = 3  # rank <= 3 counts as a reliable confirming source
@@ -38,9 +42,12 @@ def as_utc(dt: datetime | None) -> datetime | None:
 
 
 async def find_raw_duplicate(
-    session: AsyncSession, title_norm_hash: str, title_simhash: int
+    session: AsyncSession,
+    title_norm_hash: str,
+    title_simhash: int,
+    exclude_raw_id: int | None = None,
 ) -> RawItem | None:
-    """Find a recent raw item with a near-identical title."""
+    """Find the earliest recent raw item with a near-identical title."""
     cutoff = datetime.now(timezone.utc) - timedelta(days=RAW_WINDOW_DAYS)
     rows = (
         await session.scalars(
@@ -50,16 +57,22 @@ async def find_raw_duplicate(
             .limit(500)
         )
     ).all()
+    matches: list[RawItem] = []
     for row in rows:
+        if exclude_raw_id is not None and row.id == exclude_raw_id:
+            continue
         if row.title_norm_hash == title_norm_hash:
-            return row
+            matches.append(row)
+            continue
         if row.title_simhash is not None:
             try:
                 if hamming_distance(int(row.title_simhash), title_simhash) <= SIMHASH_MAX_DISTANCE:
-                    return row
+                    matches.append(row)
             except ValueError:
                 continue
-    return None
+    if not matches:
+        return None
+    return min(matches, key=lambda r: r.id)
 
 
 async def intelligence_item_for_raw(
@@ -104,7 +117,7 @@ async def find_matching_item(
     ).all()
     for candidate in candidates:
         candidate_hash = simhash64(normalize_title(candidate.headline))
-        if hamming_distance(candidate_hash, headline_hash) <= SIMHASH_MAX_DISTANCE:
+        if hamming_distance(candidate_hash, headline_hash) <= EVENT_HEADLINE_MAX_DISTANCE:
             return candidate
     return None
 

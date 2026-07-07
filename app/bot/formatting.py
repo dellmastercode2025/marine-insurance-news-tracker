@@ -143,6 +143,12 @@ def chunk_message(text: str, limit: int = 4000) -> list[str]:
     current: list[str] = []
     size = 0
     for line in text.split("\n"):
+        while len(line) > limit:  # pathological single line — hard split
+            if current:
+                chunks.append("\n".join(current))
+                current, size = [], 0
+            chunks.append(line[:limit])
+            line = line[limit:]
         if size + len(line) + 1 > limit and current:
             chunks.append("\n".join(current))
             current, size = [], 0

@@ -104,9 +104,12 @@ async def _process_new_item(
     """Returns a newly created High/Medium/Low intelligence item, or None."""
     # Stage-1 dedup: near-identical title already ingested recently.
     duplicate = await find_raw_duplicate(
-        session, raw_item.title_norm_hash, int(raw_item.title_simhash or 0)
+        session,
+        raw_item.title_norm_hash,
+        int(raw_item.title_simhash or 0),
+        exclude_raw_id=raw_item.id,
     )
-    if duplicate is not None and duplicate.id != raw_item.id:
+    if duplicate is not None:
         existing_intel = await intelligence_item_for_raw(session, duplicate)
         if existing_intel is not None:
             await merge_into_item(session, existing_intel, raw_item, source)
