@@ -1,0 +1,45 @@
+project_id = "ai-voice-task-manager"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "storage", "graphql_public"]
+
+[db]
+port = 54322
+major_version = 15
+
+[auth]
+site_url = "aivoicetasks://auth-callback"
+additional_redirect_urls = ["aivoicetasks://auth-callback"]
+jwt_expiry = 3600
+enable_refresh_token_rotation = true
+enable_signup = true
+
+[auth.email]
+enable_signup = true
+enable_confirmations = false
+
+[auth.external.apple]
+enabled = true
+client_id = "env(APPLE_SERVICES_ID)"
+secret = "env(APPLE_CLIENT_SECRET)"
+
+[functions.transcribe]
+verify_jwt = false
+[functions.parse]
+verify_jwt = false
+[functions.commit]
+verify_jwt = false
+[functions.chat]
+verify_jwt = false
+[functions.execute-actions]
+verify_jwt = false
+[functions.undo]
+verify_jwt = false
+[functions.briefing]
+verify_jwt = false
+[functions.search]
+verify_jwt = false
+[functions.embed]
+verify_jwt = false

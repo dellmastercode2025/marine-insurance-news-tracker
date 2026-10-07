@@ -1,0 +1,44 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "strict": true,
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "skipLibCheck": true,
+    "types": [
+      "node"
+    ],
+    "lib": [
+      "ES2022",
+      "DOM"
+    ]
+  },
+  "files": [
+    "types/shims.d.ts",
+    "supabase/functions/_shared/types.ts",
+    "supabase/functions/_shared/dateService.ts",
+    "supabase/functions/_shared/matching.ts",
+    "supabase/functions/_shared/resolve.ts",
+    "supabase/functions/_shared/schemas.ts",
+    "supabase/functions/_shared/prompts.ts",
+    "supabase/functions/_shared/gemini.ts",
+    "tests/dateService.test.ts",
+    "tests/resolve.test.ts",
+    "supabase/functions/_shared/context.ts",
+    "supabase/functions/_shared/tools.ts",
+    "supabase/functions/_shared/embeddings.ts",
+    "supabase/functions/_shared/auth.ts",
+    "supabase/functions/_shared/handler.ts",
+    "supabase/functions/parse/index.ts",
+    "supabase/functions/commit/index.ts",
+    "supabase/functions/chat/index.ts",
+    "supabase/functions/transcribe/index.ts",
+    "supabase/functions/execute-actions/index.ts",
+    "supabase/functions/undo/index.ts",
+    "supabase/functions/briefing/index.ts",
+    "supabase/functions/search/index.ts",
+    "supabase/functions/embed/index.ts"
+  ]
+}

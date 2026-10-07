@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key><string>ru</string>
+	<key>CFBundleDisplayName</key><string>Voice Tasks</string>
+	<key>CFBundleExecutable</key><string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIdentifier</key><string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleInfoDictionaryVersion</key><string>6.0</string>
+	<key>CFBundleName</key><string>$(PRODUCT_NAME)</string>
+	<key>CFBundlePackageType</key><string>APPL</string>
+	<key>CFBundleShortVersionString</key><string>$(MARKETING_VERSION)</string>
+	<key>CFBundleVersion</key><string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>UILaunchScreen</key><dict/>
+	<key>UISupportedInterfaceOrientations</key><array><string>UIInterfaceOrientationPortrait</string></array>
+	<key>SUPABASE_URL</key><string>$(SUPABASE_URL)</string>
+	<key>SUPABASE_ANON_KEY</key><string>$(SUPABASE_ANON_KEY)</string>
+	<key>NSMicrophoneUsageDescription</key><string>Микрофон нужен, чтобы записывать голосовые поручения.</string>
+	<key>NSSpeechRecognitionUsageDescription</key><string>Распознавание речи показывает текст во время записи.</string>
+	<key>NSCalendarsFullAccessUsageDescription</key><string>Доступ к календарю нужен, чтобы показывать события рядом с задачами и создавать встречи.</string>
+	<key>NSRemindersFullAccessUsageDescription</key><string>Синхронизация задач с Apple Напоминаниями (опционально).</string>
+	<key>NSFaceIDUsageDescription</key><string>Face ID защищает рабочие данные в приложении.</string>
+	<key>UIBackgroundModes</key><array><string>audio</string><string>fetch</string><string>processing</string></array>
+	<key>BGTaskSchedulerPermittedIdentifiers</key><array><string>com.example.aivoicetasks.process</string></array>
+	<key>CFBundleURLTypes</key>
+	<array><dict><key>CFBundleURLSchemes</key><array><string>aivoicetasks</string></array></dict></array>
+	<key>NSAppTransportSecurity</key><dict><key>NSAllowsArbitraryLoads</key><false/></dict>
+</dict>
+</plist>
