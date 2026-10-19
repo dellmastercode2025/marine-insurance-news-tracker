@@ -268,3 +268,16 @@ enum ISO8601 {
         return e
     }
 }
+
+// MARK: News & Mail
+
+struct NewsItem: Codable, Identifiable { var id: String; var source: String; var title: String; var url: String; var summary: String?; var language: String?; var publishedAt: Date? }
+struct NewsResponse: Codable { var topic: String; var title: String; var items: [NewsItem]; var refreshedAt: Date?; var refreshErrors: [String]; var digest: String? }
+
+struct MailAccount: Codable, Identifiable { var id: String; var provider: String; var email: String; var displayName: String?; var status: String; var lastSyncAt: Date?; var lastError: String? }
+struct MailMessage: Codable, Identifiable {
+    var id: String; var accountId: String; var threadId: String; var subject: String?; var fromName: String?; var fromEmail: String?
+    var toEmails: [String]; var ccEmails: [String]; var snippet: String?; var bodyText: String?; var receivedAt: Date; var isFromMe: Bool; var hasAttachments: Bool; var webLink: String?
+    var needsReply: Bool; var replyStatus: String; var aiReason: String?; var aiPriority: Int?; var aiSuggestedAction: String?; var linkedTaskId: String?
+}
+struct MailSyncResponse: Codable { struct Acc: Codable { var email: String; var fetched: Int; var pending: Int; var errors: [String] }; var accounts: [Acc]; var message: String? }

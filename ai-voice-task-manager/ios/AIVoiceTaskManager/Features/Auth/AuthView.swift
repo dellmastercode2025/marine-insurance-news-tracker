@@ -1,6 +1,7 @@
 import AuthenticationServices
 import CryptoKit
 import SwiftUI
+import UIKit
 
 struct AuthView: View {
     @Environment(AppEnvironment.self) private var env
@@ -28,6 +29,11 @@ struct AuthView: View {
             .signInWithAppleButtonStyle(.black)
             .frame(height: 50).padding(.horizontal)
 
+            Button { Task { await signInWithGoogle() } } label: {
+                HStack { Image(systemName: "g.circle.fill"); Text("Войти через Google").bold() }.frame(maxWidth: .infinity).frame(height: 44)
+            }
+            .buttonStyle(.bordered).padding(.horizontal).disabled(busy)
+
             VStack(spacing: 10) {
                 TextField("Email", text: $email).textContentType(.emailAddress).keyboardType(.emailAddress).textInputAutocapitalization(.never).textFieldStyle(.roundedBorder)
                 if codeSent {
@@ -43,6 +49,27 @@ struct AuthView: View {
             Text("Ключи AI хранятся только на сервере. Данные защищены TLS и шифрованием.").font(.caption2).foregroundStyle(.secondary)
         }
         .padding()
+    }
+
+    @State private var webSession: ASWebAuthenticationSession?
+    private func signInWithGoogle() async {
+        busy = true; defer { busy = false }
+        let redirect = "\(AppConfig.urlScheme)://auth-callback"
+        let (url, verifier) = await env.client.oauthURL(provider: "google", redirectTo: redirect)
+        do {
+            let callback: URL = try await withCheckedThrowingContinuation { cont in
+                let session = ASWebAuthenticationSession(url: url, callbackURLScheme: AppConfig.urlScheme) { url, err in
+                    if let url { cont.resume(returning: url) } else { cont.resume(throwing: err ?? URLError(.cancelled)) }
+                }
+                session.presentationContextProvider = PresentationAnchorProvider.shared
+                session.prefersEphemeralWebBrowserSession = false
+                webSession = session
+                session.start()
+            }
+            guard let code = URLComponents(url: callback, resolvingAgainstBaseURL: false)?.queryItems?.first(where: { $0.name == "code" })?.value else { error = "Google не вернул код"; return }
+            try await env.client.exchangeCode(code, verifier: verifier)
+            await env.didSignIn()
+        } catch { if (error as? URLError)?.code != .cancelled { self.error = error.localizedDescription } }
     }
 
     private func sendCode() async {
@@ -70,5 +97,12 @@ struct AuthView: View {
     }
     static func sha256(_ input: String) -> String {
         SHA256.hash(data: Data(input.utf8)).map { String(format: "%02x", $0) }.joined()
+    }
+}
+
+final class PresentationAnchorProvider: NSObject, ASWebAuthenticationPresentationContextProviding {
+    static let shared = PresentationAnchorProvider()
+    func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
+        UIApplication.shared.connectedScenes.compactMap { ($0 as? UIWindowScene)?.keyWindow }.first ?? ASPresentationAnchor()
     }
 }

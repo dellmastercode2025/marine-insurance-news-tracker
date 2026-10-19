@@ -13,6 +13,13 @@
 | `briefing` | `{}` | статистика + `headline, narrative, critical[], suggested_order[]`, списки `due_today_list, events_list, overdue_list, waiting_list` |
 | `search` | `{ query, limit?, semantic? }` | `{ tasks[], people[], projects[] }` |
 | `embed` | `{ task_ids?, all_missing? }` | `{ embedded }` |
+| `news` | `{ topic: marine\|aviation\|kazakhstan, refresh?, digest?, limit? }` | `{ topic, title, items[], refreshed_at, refresh_errors[], digest }` |
+| `news-refresh` | `{}` + заголовок `x-cron-secret` | `{ ok, report }` (для расписания) |
+| `mail-oauth` | POST `{ provider: gmail\|microsoft, return_url }` → `{ url }`; GET callback от провайдера | редирект на `return_url?mail=connected` |
+| `mail-connect` | `{ action: "imap", email, host, port, secure, username, password }` или `{ action: "remove", account_id }` | `{ ok }` |
+| `mail-sync` | `{ account_id? }` (JWT) или `{}` + `x-cron-secret` | `{ accounts: [{ email, fetched, pending, errors[] }] }` |
+
+Таблицы `mail_accounts`, `mail_messages`, `news_items`, `news_digests` читаются клиентами напрямую через PostgREST (RLS). Инструменты чата для почты: `list_unanswered_emails`, `search_emails`, `mark_email_handled`.
 
 `ResolvedItem` описан в `backend/supabase/functions/_shared/types.ts` и зеркально в `ios/.../Models/DTOs.swift`.
 

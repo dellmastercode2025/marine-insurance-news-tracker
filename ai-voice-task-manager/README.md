@@ -21,7 +21,14 @@
 | `backend/supabase/functions/<name>/` | Edge-функции: `transcribe`, `parse`, `commit`, `chat`, `execute-actions`, `undo`, `briefing`, `search`, `embed` |
 | `backend/tests/` | Unit-тесты чистых модулей (`npm test`), включая приёмочный сценарий §46 |
 | `ios/` | Проект iOS (XcodeGen `project.yml` + исходники SwiftUI) |
+| `web/` | Веб-версия (React + Vite), тот же backend и аккаунт; деплой на Vercel/Netlify |
 | `docs/` | Архитектура, AI-пайплайн, API, инструкция по развёртыванию |
+
+## Инструкции
+
+- [docs/RUN_ON_IPHONE.md](docs/RUN_ON_IPHONE.md) — запуск на iPhone шаг за шагом
+- [docs/WEB_AND_GOOGLE_LOGIN.md](docs/WEB_AND_GOOGLE_LOGIN.md) — сайт для компьютера и вход через Google-аккаунт
+- [docs/MAIL_AND_NEWS.md](docs/MAIL_AND_NEWS.md) — подключение почты (письма без ответа) и новостные ленты, автообновление по расписанию
 
 ## Быстрый старт
 
@@ -56,7 +63,10 @@
 | 36 | Offline: запись, создание/просмотр/завершение задач; обработка при появлении сети | SwiftData + `PendingSyncOp`, `NetworkMonitor` |
 | 37, 39 | Неоднозначность → выбор; политика подтверждений | `tools.ts: pending()`, `findPerson` |
 | 38 | Undo для массовых действий | `action_batches`, `undo/index.ts`, `UndoService`, баннер UNDO |
-| 41.16 | Sync | `SyncService` (pull по `updated_at`, push очереди) |
+| 41.16 | Sync | `SyncService` (pull по `updated_at`, push очереди); веб — Supabase Realtime |
+| доп. | Веб-доступ с компьютера, вход через Google | `web/`, Supabase Auth Google, PKCE в iOS |
+| доп. | Новости: морское / авиационное страхование / Казахстан, AI-дайджест, автообновление | `_shared/news.ts`, `news`, `news-refresh`, `News.tsx`, `NewsView` |
+| доп. | Переписки: Gmail / Microsoft 365 / IMAP только на чтение, письма без ответа, триаж AI, задачи из писем, инструменты чата | `_shared/mail/*`, `mail-oauth`, `mail-connect`, `mail-sync`, `Mail.tsx`, `MailView` |
 
 Подробности: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/AI_PIPELINE.md](docs/AI_PIPELINE.md), [docs/API.md](docs/API.md).
 

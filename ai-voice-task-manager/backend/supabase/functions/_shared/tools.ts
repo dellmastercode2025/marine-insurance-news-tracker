@@ -137,9 +137,12 @@ export const TOOL_DECLARATIONS: FunctionDeclaration[] = [
   { name: "create_area", description: "Create an area (direction) inside a project.", parameters: { type: "object", properties: { project: { type: "string" }, name: { type: "string" }, parent_area: { type: "string", nullable: true } }, required: ["project", "name"] } },
   { name: "create_person", description: "Create a contact.", parameters: { type: "object", properties: { name: { type: "string" }, organisation: { type: "string", nullable: true }, role: { type: "string", nullable: true } }, required: ["name"] } },
   { name: "create_calendar_event", description: "Create a calendar event (synced to Apple Calendar on the device). Requires confirmation.", parameters: { type: "object", properties: { title: { type: "string" }, start: semanticDateSchema, end: semanticDateSchema, project: { type: "string", nullable: true }, area: { type: "string", nullable: true }, person: { type: "string", nullable: true } }, required: ["title", "start"] } },
+  { name: "list_unanswered_emails", description: "Emails in the connected mailbox that still wait for the user's reply (AI-triaged). Use for 'what emails are unanswered', 'what does Denis wait from me by email'.", parameters: { type: "object", properties: { from: { type: "string", nullable: true, description: "filter by sender name/email" }, days: { type: "integer", nullable: true }, limit: { type: "integer", nullable: true } } } },
+  { name: "search_emails", description: "Full-text search over synced emails (subject, sender, snippet). Use for 'find the letter from WTW about …'.", parameters: { type: "object", properties: { query: { type: "string" }, days: { type: "integer", nullable: true }, limit: { type: "integer", nullable: true } }, required: ["query"] } },
+  { name: "mark_email_handled", description: "Mark an unanswered email as replied/dismissed, or create a follow-up task from it.", parameters: { type: "object", properties: { email_id: { type: "string" }, status: { type: "string", enum: ["replied", "dismissed", "task_created"] }, task_title: { type: "string", nullable: true }, due: semanticDateSchema }, required: ["email_id", "status"] } },
 ];
 
-export const READ_ONLY_TOOLS = new Set(["list_tasks", "search_tasks", "get_task"]);
+export const READ_ONLY_TOOLS = new Set(["list_tasks", "search_tasks", "get_task", "list_unanswered_emails", "search_emails"]);
 
 // ---------- helpers ----------
 function str(v: unknown): string | null {
@@ -607,6 +610,49 @@ export async function executeTool(
       case "create_person": {
         const p = await ensurePerson(ctx, str(args.name), str(args.organisation), str(args.role));
         return { ok: true, result: { person_id: p.id, ambiguous: p.ambiguous } };
+      }
+      case "list_unanswered_emails": {
+        const days = int(args.days) ?? 30;
+        let q = ctx.supabase.from("mail_messages").select("id,subject,from_name,from_email,received_at,snippet,ai_reason,ai_priority,ai_suggested_action,web_link,account:mail_accounts(email)")
+          .eq("user_id", ctx.userId).eq("needs_reply", true).eq("reply_status", "pending").gte("received_at", new Date(ctx.now.getTime() - days * 86400_000).toISOString())
+          .order("ai_priority", { ascending: true }).order("received_at", { ascending: false }).limit(Math.min(int(args.limit) ?? 30, 100));
+        const from = str(args.from);
+        if (from) q = q.or(`from_name.ilike.%${from}%,from_email.ilike.%${from}%`);
+        const { data, error } = await q;
+        if (error) return { ok: false, error: error.message };
+        return { ok: true, result: { count: data?.length ?? 0, emails: (data ?? []).map((m: Record<string, any>) => ({ ...m, received_human: describeISO(m.received_at, ctx.tz), waiting_days: Math.floor((ctx.now.getTime() - new Date(m.received_at).getTime()) / 86400_000) })) } };
+      }
+      case "search_emails": {
+        const text = str(args.query);
+        if (!text) return { ok: false, error: "query required" };
+        const days = int(args.days) ?? 90;
+        const like = `%${text.replace(/[%_]/g, " ")}%`;
+        const { data, error } = await ctx.supabase.from("mail_messages").select("id,subject,from_name,from_email,received_at,snippet,is_from_me,needs_reply,reply_status,web_link")
+          .eq("user_id", ctx.userId).gte("received_at", new Date(ctx.now.getTime() - days * 86400_000).toISOString())
+          .or(`subject.ilike.${like},snippet.ilike.${like},from_name.ilike.${like},from_email.ilike.${like},body_text.ilike.${like}`)
+          .order("received_at", { ascending: false }).limit(Math.min(int(args.limit) ?? 20, 50));
+        if (error) return { ok: false, error: error.message };
+        return { ok: true, result: { count: data?.length ?? 0, emails: (data ?? []).map((m: Record<string, any>) => ({ ...m, received_human: describeISO(m.received_at, ctx.tz) })) } };
+      }
+      case "mark_email_handled": {
+        const id = str(args.email_id);
+        const status = str(args.status);
+        if (!id || !status || !["replied", "dismissed", "task_created"].includes(status)) return { ok: false, error: "email_id and valid status required" };
+        const { data: mail } = await ctx.supabase.from("mail_messages").select("id,subject,from_name,from_email,web_link,ai_suggested_action").eq("id", id).eq("user_id", ctx.userId).maybeSingle();
+        if (!mail) return { ok: false, error: "email not found" };
+        let taskId: string | null = null;
+        if (status === "task_created") {
+          const task = await createTaskRecord(ctx, {
+            title: str(args.task_title) ?? `Ответить: ${mail.subject ?? mail.from_name ?? mail.from_email}`,
+            description: [`Письмо от ${mail.from_name ?? ""} <${mail.from_email}>`, mail.ai_suggested_action, mail.web_link].filter(Boolean).join("\n"),
+            due_at: resolveSemanticDate(sdate(args.due), { now: ctx.now, prefs: ctx.prefs, role: "due" }),
+            person: mail.from_name,
+            tags: ["email"],
+          });
+          taskId = task.id as string;
+        }
+        await update(ctx, "mail_messages", id, { reply_status: status, needs_reply: false, linked_task_id: taskId });
+        return { ok: true, result: { email_id: id, status, task_id: taskId } };
       }
       default:
         return { ok: false, error: `unknown tool ${name}` };

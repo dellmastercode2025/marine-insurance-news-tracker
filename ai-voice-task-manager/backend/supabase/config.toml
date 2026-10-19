@@ -43,3 +43,13 @@ verify_jwt = false
 verify_jwt = false
 [functions.embed]
 verify_jwt = false
+[functions.news]
+verify_jwt = false
+[functions.news-refresh]
+verify_jwt = false
+[functions.mail-oauth]
+verify_jwt = false
+[functions.mail-connect]
+verify_jwt = false
+[functions.mail-sync]
+verify_jwt = false

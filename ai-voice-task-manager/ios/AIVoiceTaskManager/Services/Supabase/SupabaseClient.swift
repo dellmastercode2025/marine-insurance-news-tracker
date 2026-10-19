@@ -1,3 +1,4 @@
+import CryptoKit
 import Foundation
 
 struct Session: Codable {
@@ -68,6 +69,37 @@ actor SupabaseClient {
         let data = try await raw("auth/v1/token?grant_type=id_token", method: "POST", body: try JSONSerialization.data(withJSONObject: body), authenticated: false)
         store(try JSONDecoder().decode(TokenResponse.self, from: data))
     }
+
+    /// OAuth (Google etc.) with PKCE: returns the URL to open in ASWebAuthenticationSession and the verifier to keep.
+    func oauthURL(provider: String, redirectTo: String) -> (url: URL, verifier: String) {
+        let verifier = Self.randomString(64)
+        let challenge = Self.base64URL(Self.sha256(Data(verifier.utf8)))
+        var comps = URLComponents(url: baseURL.appendingPathComponent("auth/v1/authorize"), resolvingAgainstBaseURL: false)!
+        comps.queryItems = [
+            URLQueryItem(name: "provider", value: provider),
+            URLQueryItem(name: "redirect_to", value: redirectTo),
+            URLQueryItem(name: "code_challenge", value: challenge),
+            URLQueryItem(name: "code_challenge_method", value: "s256"),
+            URLQueryItem(name: "access_type", value: "offline"),
+            URLQueryItem(name: "prompt", value: "select_account"),
+        ]
+        return (comps.url!, verifier)
+    }
+
+    func exchangeCode(_ code: String, verifier: String) async throws {
+        let body = ["auth_code": code, "code_verifier": verifier]
+        let data = try await raw("auth/v1/token?grant_type=pkce", method: "POST", body: try JSONSerialization.data(withJSONObject: body), authenticated: false)
+        store(try JSONDecoder().decode(TokenResponse.self, from: data))
+    }
+
+    private static func randomString(_ n: Int) -> String {
+        let chars = Array("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~")
+        var bytes = [UInt8](repeating: 0, count: n)
+        _ = SecRandomCopyBytes(kSecRandomDefault, n, &bytes)
+        return String(bytes.map { chars[Int($0) % chars.count] })
+    }
+    private static func sha256(_ d: Data) -> Data { Data(SHA256.hash(data: d)) }
+    private static func base64URL(_ d: Data) -> String { d.base64EncodedString().replacingOccurrences(of: "+", with: "-").replacingOccurrences(of: "/", with: "_").replacingOccurrences(of: "=", with: "") }
 
     func sendEmailOTP(email: String) async throws {
         let body: [String: Any] = ["email": email, "create_user": true]

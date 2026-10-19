@@ -39,6 +39,19 @@
     "supabase/functions/undo/index.ts",
     "supabase/functions/briefing/index.ts",
     "supabase/functions/search/index.ts",
-    "supabase/functions/embed/index.ts"
+    "supabase/functions/embed/index.ts",
+    "supabase/functions/_shared/service.ts",
+    "supabase/functions/_shared/crypto.ts",
+    "supabase/functions/_shared/news.ts",
+    "supabase/functions/_shared/mail/types.ts",
+    "supabase/functions/_shared/mail/gmail.ts",
+    "supabase/functions/_shared/mail/microsoft.ts",
+    "supabase/functions/_shared/mail/classify.ts",
+    "supabase/functions/news/index.ts",
+    "supabase/functions/news-refresh/index.ts",
+    "supabase/functions/mail-oauth/index.ts",
+    "supabase/functions/mail-sync/index.ts",
+    "tests/news.test.ts",
+    "tests/mail.test.ts"
   ]
 }

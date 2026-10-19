@@ -26,7 +26,7 @@ final class AppEnvironment {
     var showRecorder = false
     var openTaskId: UUID?
 
-    enum Tab: Hashable { case today, board, chat, projects }
+    enum Tab: Hashable { case today, board, chat, projects, more }
 
     private init() {
         let schema = Schema(ModelSchemaV1.models)
@@ -98,5 +98,12 @@ final class AppEnvironment {
         guard url.scheme == AppConfig.urlScheme else { return }
         if url.host == "task", let id = UUID(uuidString: url.lastPathComponent) { openTaskId = id }
         if url.host == "record" { showRecorder = true }
+        if url.host == "mail-connected" { NotificationCenter.default.post(name: .mailConnected, object: url) }
+        if url.host == "auth-callback" { NotificationCenter.default.post(name: .authCallback, object: url) }
     }
+}
+
+extension Notification.Name {
+    static let mailConnected = Notification.Name("mailConnected")
+    static let authCallback = Notification.Name("authCallback")
 }

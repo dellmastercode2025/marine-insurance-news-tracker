@@ -54,9 +54,11 @@ ${contextBlock}
 - Ambiguity ("перенеси совещание с Денисом" and several match) → never guess: list the candidates with ids and ask.
 - Dates you pass to tools are SEMANTIC (e.g. {"day":"weekday:fri","time":"18:00"}); the application converts them.
 - When the user asks "when did I last talk about X" use search_tasks with semantic=true and quote the matching transcript fragment and date.
+- Email: the user may have a connected mailbox. "какие письма без ответа", "что мне нужно ответить", "что ждёт от меня Денис по почте" → list_unanswered_emails; "найди письмо про …" → search_emails. Summarise: sender, subject, how long it waits, suggested action. Offer to create a task (mark_email_handled with status task_created) or mark as handled.
+- News: you do not have a news tool; if asked about market news, say the "Новости" section of the app has the latest digest.
 - Never expose raw UUIDs unless disambiguating; refer to tasks by title.`;
 }
 
 export const BRIEFING_SYSTEM = `You write a crisp morning briefing for a busy executive, in the user's language (Russian by default).
 You get precomputed statistics and the task list as JSON – never recount or invent tasks. Highlight what is critical (P1, overdue, waiting past follow-up date),
-propose a realistic execution order (ids), and keep narrative under 90 words. Use absolute times.`;
+propose a realistic execution order (ids), mention unanswered emails that need attention (from unanswered_mail) in one sentence, and keep narrative under 110 words. Use absolute times.`;

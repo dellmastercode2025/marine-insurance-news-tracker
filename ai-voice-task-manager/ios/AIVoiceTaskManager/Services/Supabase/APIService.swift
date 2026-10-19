@@ -64,4 +64,19 @@ struct APIService {
     func search(_ query: String, limit: Int = 20) async throws -> SearchResponse { try await call("search", ["query": query, "limit": limit]) }
 
     func embedMissing() async throws { struct R: Decodable { var embedded: Int }; let _: R = try await call("embed", ["all_missing": true]) }
+
+    func news(topic: String, refresh: Bool = false, digest: Bool = false) async throws -> NewsResponse { try await call("news", ["topic": topic, "refresh": refresh, "digest": digest]) }
+
+    func mailOAuthURL(provider: String) async throws -> URL {
+        struct R: Decodable { var url: String }
+        let r: R = try await call("mail-oauth", ["provider": provider, "return_url": "\(AppConfig.urlScheme)://mail-connected"])
+        guard let url = URL(string: r.url) else { throw SupabaseError.decoding("oauth url") }
+        return url
+    }
+    func mailSync() async throws -> MailSyncResponse { try await call("mail-sync", [:]) }
+    func mailRemove(accountId: String) async throws { struct R: Decodable { var ok: Bool }; let _: R = try await call("mail-connect", ["action": "remove", "account_id": accountId]) }
+    func mailConnectIMAP(email: String, host: String, port: Int, secure: Bool, username: String, password: String) async throws {
+        struct R: Decodable { var ok: Bool }
+        let _: R = try await call("mail-connect", ["action": "imap", "email": email, "host": host, "port": port, "secure": secure, "username": username, "password": password])
+    }
 }

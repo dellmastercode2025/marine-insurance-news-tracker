@@ -27,6 +27,14 @@ supabase functions deploy transcribe parse commit chat execute-actions undo brie
 | `GEMINI_EMBEDDING_MODEL` | `gemini-embedding-001` | эмбеддинги для семантического поиска |
 | `GEMINI_EMBEDDING_DIMENSIONS` | `768` | должно совпадать с `vector(768)` в схеме |
 
+| `APP_URLS` | `http://localhost:5173,aivoicetasks://mail-connected` | разрешённые адреса возврата после подключения почты (добавьте адрес сайта) |
+| `GOOGLE_OAUTH_CLIENT_ID/SECRET` | — | доступ к Gmail (раздел Переписки) |
+| `MS_OAUTH_CLIENT_ID/SECRET`, `MS_OAUTH_TENANT` | — / `common` | доступ к Microsoft 365 |
+| `MAIL_ENCRYPTION_KEY` | производный от service key | AES-ключ для токенов почты, задайте явно (`openssl rand -base64 32`) |
+| `CRON_SECRET` | — | секрет для `news-refresh` / `mail-sync` по расписанию |
+
+Деплой всех функций: `supabase functions deploy transcribe parse commit chat execute-actions undo briefing search embed news news-refresh mail-oauth mail-connect mail-sync --no-verify-jwt`.
+
 Локальная разработка: `supabase start && supabase functions serve --env-file supabase/.env`.
 
 ## 2. iOS

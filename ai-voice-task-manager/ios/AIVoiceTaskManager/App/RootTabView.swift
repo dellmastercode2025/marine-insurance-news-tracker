@@ -12,6 +12,7 @@ struct RootTabView: View {
                 BoardView().tabItem { Label("Доска", systemImage: "square.grid.3x1.below.line.grid.1x2") }.tag(AppEnvironment.Tab.board)
                 ChatView().tabItem { Label("Чат", systemImage: "bubble.left.and.text.bubble.right") }.tag(AppEnvironment.Tab.chat)
                 ProjectsView().tabItem { Label("Проекты", systemImage: "folder") }.tag(AppEnvironment.Tab.projects)
+                MoreView().tabItem { Label("Ещё", systemImage: "ellipsis.circle") }.tag(AppEnvironment.Tab.more)
             }
             MicButton { env.showRecorder = true }
                 .padding(.bottom, 4)

@@ -26,6 +26,8 @@ serveWith(async (req, ctx, gemini) => {
   const followUpDue = waiting.filter((t: any) => t.follow_up_at && new Date(t.follow_up_at) <= tomorrow0);
   const events = open.filter((t: any) => t.kind === "event" && t.start_at && new Date(t.start_at) >= today0 && new Date(t.start_at) < tomorrow0);
   const critical = open.filter((t: any) => t.priority === 1 || overdue.includes(t) || followUpDue.includes(t));
+  const { data: mails } = await ctx.supabase.from("mail_messages").select("id,subject,from_name,from_email,received_at,ai_priority,ai_suggested_action").eq("user_id", ctx.userId).eq("needs_reply", true).eq("reply_status", "pending").order("ai_priority").order("received_at", { ascending: false }).limit(20);
+  const unansweredMail = (mails ?? []).map((m: any) => ({ id: m.id, from: m.from_name ?? m.from_email, subject: m.subject, received: describeISO(m.received_at, ctx.tz), priority: m.ai_priority, action: m.ai_suggested_action }));
   const stats = {
     date_human: new Intl.DateTimeFormat("ru-RU", { timeZone: ctx.tz, weekday: "long", day: "numeric", month: "long" }).format(ctx.now),
     today_total: dueToday.length + events.length,
@@ -35,12 +37,13 @@ serveWith(async (req, ctx, gemini) => {
     waiting: waiting.length,
     follow_ups_due: followUpDue.length,
     events: events.length,
+    unanswered_mail: unansweredMail.length,
   };
   const slim = (t: any) => ({ id: t.id, title: t.title, priority: t.priority, due: describeISO(t.due_at, ctx.tz), start: describeISO(t.start_at, ctx.tz), project: t.project?.name, area: t.area?.name, waiting_for: t.waiting_for?.name, follow_up: describeISO(t.follow_up_at, ctx.tz) });
-  const payload = { stats, due_today: dueToday.map(slim), events: events.map(slim), overdue: overdue.map(slim), waiting: waiting.map(slim) };
+  const payload = { stats, due_today: dueToday.map(slim), events: events.map(slim), overdue: overdue.map(slim), waiting: waiting.map(slim), unanswered_mail: unansweredMail.slice(0, 10) };
 
   let narrative = { headline: `Сегодня, ${stats.date_human}`, narrative: "", critical: critical.slice(0, 5).map((t: any) => ({ task_id: t.id, line: t.title })), suggested_order: [...critical, ...dueToday].map((t: any) => t.id).filter((v, i, a) => a.indexOf(v) === i).slice(0, 10) };
-  if (open.length) {
+  if (open.length || unansweredMail.length) {
     try {
       narrative = await gemini.generateJSON({
         systemInstruction: BRIEFING_SYSTEM + "\n" + nowBlock(ctx.now, ctx.tz),
@@ -52,5 +55,5 @@ serveWith(async (req, ctx, gemini) => {
       console.warn("briefing narrative failed", e instanceof Error ? e.message : e);
     }
   }
-  return json({ ...stats, ...narrative, due_today_list: payload.due_today, events_list: payload.events, overdue_list: payload.overdue, waiting_list: payload.waiting });
+  return json({ ...stats, ...narrative, due_today_list: payload.due_today, events_list: payload.events, overdue_list: payload.overdue, waiting_list: payload.waiting, unanswered_mail_list: unansweredMail });
 });
